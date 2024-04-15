@@ -1,6 +1,11 @@
 //Variables y Selectores de elementos del HTML-----------------------------------------------------------------------------------------------------------------
 const result = document.querySelector( '#resultado' );
 const form = document.querySelector( '#formulario' );
+const pagination = document.querySelector( '#paginacion' );
+const recordsPerPage = 30;
+let totalPages;
+let iterator;
+let actualPage = 1;
 
 
 
@@ -27,7 +32,7 @@ function validateForm( e ) {
         return;
     }
 
-    searchImages( searchParameter );
+    searchImages();
 
 }
 
@@ -66,17 +71,39 @@ function msjAlert( msj ) {
 
 
 
-function searchImages( parameter ) {
+function searchImages() {
+
+    const parameter = document.querySelector( '#termino' ).value;
 
     const key = '43299092-d77fa940cd5de66c1f9778202';
-    const url = `https://pixabay.com/api/?key=${key}&q=${parameter}`;
+    const url = `https://pixabay.com/api/?key=${key}&q=${parameter}&per_page=${recordsPerPage}&page=${actualPage}`;
 
     fetch( url )
         .then( answer => answer.json() )
         .then( result => {
-
+            totalPages = calculatePages( result.totalHits );
             showImages( result.hits );
+
         })
+}
+
+
+
+
+function *paginador( total ) {
+
+    for( let i = 1; i <= total; i++ ) {
+
+        yield i;
+    }
+}
+
+
+
+
+function calculatePages( total) {
+
+    return parseInt( Math.ceil( total / recordsPerPage ));
 }
 
 
@@ -84,8 +111,7 @@ function searchImages( parameter ) {
 
 function showImages( images ) {
 
-    console.log(images)
-    cleanHTML();
+    cleanHTML(result);
 
     images.forEach( image => {
 
@@ -101,20 +127,52 @@ function showImages( images ) {
                     <a class="block w-full bg-blue-800 hover:bg-blue-500 text-white uppercase font-bolt text-center rounded mt-5 p-1" href="${largeImageURL}" target="_blank" rel="noopener noreferrer">Ver Imagen</a>
                 </div>
             </div>
-        </div>
-        
+        </div>  
         `;
-    })
+    });
+
+    cleanHTML( pagination );
+
+    printPager();
 }
 
 
 
 
-function cleanHTML() {
+function printPager() {
 
-    while( result.firstChild ) {
+    iterator = paginador( totalPages );
+    while( true ) {
 
-        result.removeChild( result.firstChild );
+        const { value, done } = iterator.next();
+        if( done ) return;
+
+        // de lo contrario (else) generar un boton por cada pagina
+        const aBtn = document.createElement( 'A' );
+        aBtn.href = '#';
+        aBtn.dataset.pagina = value;
+        aBtn.textContent = value;
+        aBtn.classList.add( 'siguiente', 'bg-yellow-400', 'px-4', 'py-1', 'mr-2', 'font-bold', 'mb-4', 'rounded');
+        aBtn.onclick = () => {
+
+            actualPage = value;
+            searchImages();
+
+        }
+
+        pagination.appendChild( aBtn );
+    }
+}
+
+
+
+
+
+function cleanHTML(clean) {
+
+    while( clean.firstChild ) {
+
+        clean.removeChild( clean.firstChild );
     }
 }
 
